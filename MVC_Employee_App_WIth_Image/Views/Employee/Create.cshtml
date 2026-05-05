@@ -1,4 +1,5 @@
-﻿@model MVC_Employee_App_WIth_Image.Models.EmployeeViewModel
+@using MVC_Employee_App_WIth_Image.ViewModel
+@model EmployeeViewModel
 
 @{
     ViewData["Title"] = "Add Employee";
@@ -19,7 +20,7 @@
 
     .card-custom {
         border-radius: 16px;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
         border: none;
     }
 
@@ -35,9 +36,9 @@
         border-radius: 8px;
     }
 
-        .btn-brand:hover {
-            background: #4338ca;
-        }
+    .btn-brand:hover {
+        background: #4338ca;
+    }
 
     .preview-img {
         width: 120px;
@@ -54,11 +55,54 @@
         border-radius: 10px;
         text-align: center;
         cursor: pointer;
+        transition: all 0.3s;
     }
 
-        .file-box:hover {
-            background: #f9fafb;
-        }
+    .file-box:hover {
+        background: #f9fafb;
+        border-color: #4f46e5;
+    }
+
+    .file-input {
+        display: none;
+    }
+
+    .file-preview {
+        margin-top: 10px;
+        padding: 10px;
+        background: #f0f4ff;
+        border-radius: 8px;
+        display: none;
+    }
+
+    .file-preview.show {
+        display: block;
+    }
+
+    .file-info {
+        color: #667eea;
+        font-weight: 600;
+    }
+
+    .form-floating > label {
+        color: #667eea;
+    }
+
+    .form-control {
+        border-radius: 8px;
+        border: 1px solid #e0e0e0;
+    }
+
+    .form-control:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(79, 70, 229, 0.25);
+    }
+
+    .error-message {
+        color: #dc3545;
+        font-size: 13px;
+        margin-top: 5px;
+    }
 </style>
 
 <div class="container mt-5 form-container">
@@ -67,7 +111,7 @@
 
         <!-- HEADER -->
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <div class="form-title">Add New Employee</div>
+            <div class="form-title"><i class="fas fa-user-plus"></i> Add New Employee</div>
 
             <a asp-action="Index" class="btn btn-outline-secondary">
                 <i class="fa fa-arrow-left"></i> Back
@@ -75,7 +119,7 @@
         </div>
 
         <form asp-action="Create" method="post" enctype="multipart/form-data">
-
+            <div asp-validation-summary="All" class="alert alert-danger"></div>
             <div class="row g-4">
 
                 <!-- LEFT SIDE -->
@@ -84,25 +128,25 @@
                     <div class="form-floating mb-3">
                         <input asp-for="First_Name" class="form-control" placeholder="First Name" />
                         <label>First Name</label>
-                        <span asp-validation-for="First_Name" class="text-danger"></span>
+                        <span asp-validation-for="First_Name" class="error-message"></span>
                     </div>
 
                     <div class="form-floating mb-3">
                         <input asp-for="Last_Name" class="form-control" placeholder="Last Name" />
                         <label>Last Name</label>
-                        <span asp-validation-for="Last_Name" class="text-danger"></span>
+                        <span asp-validation-for="Last_Name" class="error-message"></span>
                     </div>
 
                     <div class="form-floating mb-3">
                         <input asp-for="Email_Address" class="form-control" placeholder="Email" />
                         <label>Email Address</label>
-                        <span asp-validation-for="Email_Address" class="text-danger"></span>
+                        <span asp-validation-for="Email_Address" class="error-message"></span>
                     </div>
 
                     <div class="form-floating mb-3">
-                        <textarea asp-for="Home_Address" class="form-control" style="height: 100px"></textarea>
+                        <textarea asp-for="Home_Address" class="form-control" style="height: 100px" placeholder="Address"></textarea>
                         <label>Home Address</label>
-                        <span asp-validation-for="Home_Address" class="text-danger"></span>
+                        <span asp-validation-for="Home_Address" class="error-message"></span>
                     </div>
 
                 </div>
@@ -112,33 +156,43 @@
 
                     <!-- IMAGE PREVIEW -->
                     <div class="mb-3">
-                        <img id="imgPreview" src="https://via.placeholder.com/120" class="preview-img" />
+                        <img id="imgPreview" src="https://via.placeholder.com/120?text=Profile" class="preview-img" />
                     </div>
 
-                    <!-- IMAGE UPLOAD (IMPORTANT ID) -->
+                    <!-- IMAGE UPLOAD -->
                     <div class="mb-4">
+                        <div class="file-box" onclick="document.getElementById('ProfileImage').click()">
+                            <i class="fas fa-cloud-upload-alt" style="font-size: 24px; color: #4f46e5;"></i>
+                            <p class="mt-2 mb-0">Click to upload profile picture</p>
+                            <small class="text-muted">JPG, PNG (Max 5MB)</small>
+                        </div>
                         <input type="file"
                                asp-for="ProfileImage"
                                id="ProfileImage"
-                               class="form-control" />
-
-                        <small class="text-muted">Upload Profile Picture</small>
+                               class="file-input"
+                               accept="image/*" />
+                        <span asp-validation-for="ProfileImage" class="error-message"></span>
                     </div>
 
                     <!-- DOCUMENT UPLOAD -->
-                    <div class="file-box mb-2">
-                        <input type="file"
-                               asp-for="AddressProofFile"
-                               id="AddressProofFile"
-                               class="form-control" />
-
-                        <p class="mt-2 mb-0">
-                            <i class="fa fa-file-upload"></i> Upload Address Proof
-                        </p>
+                    <div class="file-box mb-2" onclick="document.getElementById('AddressProofFile').click()">
+                        <i class="fas fa-file-upload" style="font-size: 24px; color: #4f46e5;"></i>
+                        <p class="mt-2 mb-0">Click to upload address proof</p>
+                        <small class="text-muted">PDF, DOC, DOCX (Max 5MB)</small>
                     </div>
 
-                    <!-- FILE NAME -->
-                    <div id="fileName" class="text-muted small"></div>
+                    <input type="file"
+                           asp-for="AddressProofFile"
+                           id="AddressProofFile"
+                           class="file-input"
+                           accept=".pdf,.doc,.docx" />
+
+                    <!-- FILE PREVIEW -->
+                    <div id="filePreview" class="file-preview">
+                        <i class="fas fa-file"></i>
+                        <span id="fileName" class="file-info"></span>
+                    </div>
+                    <span asp-validation-for="AddressProofFile" class="error-message"></span>
 
                 </div>
 
@@ -159,6 +213,30 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
-    <script src="~/js/employee.js"></script>
-}
+    <script>
+        // Profile image preview
+        document.getElementById('ProfileImage').addEventListener('change', function (e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function (event) {
+                    document.getElementById('imgPreview').src = event.target.result;
+                    document.getElementById('imgPreview').style.borderStyle = 'solid';
+                    document.getElementById('imgPreview').style.borderColor = '#4f46e5';
+                };
+                reader.readAsDataURL(file);
+            }
+        });
 
+        // Document file preview
+        document.getElementById('AddressProofFile').addEventListener('change', function (e) {
+            const file = e.target.files[0];
+            if (file) {
+                const filePreviewDiv = document.getElementById('filePreview');
+                const fileNameSpan = document.getElementById('fileName');
+                fileNameSpan.textContent = file.name;
+                filePreviewDiv.classList.add('show');
+            }
+        });
+    </script>
+}

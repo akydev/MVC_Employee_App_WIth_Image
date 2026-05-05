@@ -1,11 +1,13 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MVC_Employee_App_WIth_Image.Data;
 using MVC_Employee_App_WIth_Image.Models;
-
+using MVC_Employee_App_WIth_Image.ViewModel;
 
 namespace MVC_Employee_App_WIth_Image.Controllers
 {
+    [Authorize]
     public class EmployeeController : Controller
     {
         private readonly AppDbContext _context;
@@ -17,22 +19,22 @@ namespace MVC_Employee_App_WIth_Image.Controllers
             _env = env;
         }
 
-        // ===================== INDEX (JOIN) =====================
-        public IActionResult Index()
+        // ===================== INDEX =====================
+        public async Task<IActionResult> Index()
         {
-            var data = (from e in _context.Employees
-                        join d in _context.EmployeeDetails
-                        on e.EmpId equals d.EmpId
-                        select new EmployeeViewModel
-                        {
-                            EmpId = e.EmpId,
-                            First_Name = e.First_Name,
-                            Last_Name = e.Last_Name,
-                            Profile_Pic = e.Profile_Pic,
-                            Address_Proof = e.Address_Proof,
-                            Home_Address = d.Home_Address,
-                            Email_Address = d.Email_Address
-                        }).ToList();
+            var data = await (from e in _context.Employees
+                              join d in _context.EmployeeDetails
+                              on e.EmpId equals d.EmpId
+                              select new EmployeeViewModel
+                              {
+                                  EmpId = e.EmpId,
+                                  First_Name = e.First_Name,
+                                  Last_Name = e.Last_Name,
+                                  Profile_Pic = e.Profile_Pic,
+                                  Address_Proof = e.Address_Proof,
+                                  Home_Address = d.Home_Address,
+                                  Email_Address = d.Email_Address
+                              }).ToListAsync();
 
             return View(data);
         }
@@ -45,12 +47,16 @@ namespace MVC_Employee_App_WIth_Image.Controllers
 
         // ===================== CREATE (POST) =====================
         [HttpPost]
-        public IActionResult Create(EmployeeViewModel vm)
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Create(EmployeeViewModel vm)
         {
-            if (ModelState.IsValid)
+            if (!ModelState.IsValid)
+                return View(vm);
+
+            try
             {
-                string img = UploadFile(vm.ProfileImage, "Uploads/Images");
-                string doc = UploadFile(vm.AddressProofFile, "Uploads/Docs");
+                string? img = await UploadFileAsync(vm.ProfileImage, "Uploads/Images");
+                string? doc = await UploadFileAsync(vm.AddressProofFile, "Uploads/Docs");
 
                 var emp = new Employee
                 {
@@ -60,41 +66,46 @@ namespace MVC_Employee_App_WIth_Image.Controllers
                     Address_Proof = doc
                 };
 
-                _context.Employees.Add(emp);
-                _context.SaveChanges();
+                await _context.Employees.AddAsync(emp);
 
                 var details = new EmployeeDetails
                 {
-                    EmpId = emp.EmpId,
+                    Employee = emp,
                     Home_Address = vm.Home_Address,
                     Email_Address = vm.Email_Address
                 };
 
-                _context.EmployeeDetails.Add(details);
-                _context.SaveChanges();
+                await _context.EmployeeDetails.AddAsync(details);
 
-                return RedirectToAction("Index");
+                await _context.SaveChangesAsync();
+
+                TempData["SuccessMessage"] = "Employee added successfully!";
+                return RedirectToAction(nameof(Index));
             }
-            return View(vm);
+            catch (Exception ex)
+            {
+                ModelState.AddModelError("", ex.Message);
+                return View(vm);
+            }
         }
 
         // ===================== EDIT (GET) =====================
-        public IActionResult Edit(int id)
+        public async Task<IActionResult> Edit(int id)
         {
-            var data = (from e in _context.Employees
-                        join d in _context.EmployeeDetails
-                        on e.EmpId equals d.EmpId
-                        where e.EmpId == id
-                        select new EmployeeViewModel
-                        {
-                            EmpId = e.EmpId,
-                            First_Name = e.First_Name,
-                            Last_Name = e.Last_Name,
-                            Profile_Pic = e.Profile_Pic,
-                            Address_Proof = e.Address_Proof,
-                            Home_Address = d.Home_Address,
-                            Email_Address = d.Email_Address
-                        }).FirstOrDefault();
+            var data = await (from e in _context.Employees
+                              join d in _context.EmployeeDetails
+                              on e.EmpId equals d.EmpId
+                              where e.EmpId == id
+                              select new EmployeeViewModel
+                              {
+                                  EmpId = e.EmpId,
+                                  First_Name = e.First_Name,
+                                  Last_Name = e.Last_Name,
+                                  Profile_Pic = e.Profile_Pic,
+                                  Address_Proof = e.Address_Proof,
+                                  Home_Address = d.Home_Address,
+                                  Email_Address = d.Email_Address
+                              }).FirstOrDefaultAsync();
 
             if (data == null)
                 return NotFound();
@@ -104,28 +115,33 @@ namespace MVC_Employee_App_WIth_Image.Controllers
 
         // ===================== EDIT (POST) =====================
         [HttpPost]
-        public IActionResult Edit(EmployeeViewModel vm)
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Edit(EmployeeViewModel vm)
         {
-            if (ModelState.IsValid)
+            if (!ModelState.IsValid)
+                return View(vm);
+
+            var emp = await _context.Employees.FindAsync(vm.EmpId);
+            var details = await _context.EmployeeDetails
+                .FirstOrDefaultAsync(x => x.EmpId == vm.EmpId);
+
+            if (emp == null || details == null)
+                return NotFound();
+
+            try
             {
-                var emp = _context.Employees.Find(vm.EmpId);
-                var details = _context.EmployeeDetails.FirstOrDefault(x => x.EmpId == vm.EmpId);
-
-                if (emp == null || details == null)
-                    return NotFound();
-
                 // IMAGE UPDATE
                 if (vm.ProfileImage != null)
                 {
                     DeleteFile("Uploads/Images", emp.Profile_Pic);
-                    emp.Profile_Pic = UploadFile(vm.ProfileImage, "Uploads/Images");
+                    emp.Profile_Pic = await UploadFileAsync(vm.ProfileImage, "Uploads/Images");
                 }
 
                 // DOC UPDATE
                 if (vm.AddressProofFile != null)
                 {
                     DeleteFile("Uploads/Docs", emp.Address_Proof);
-                    emp.Address_Proof = UploadFile(vm.AddressProofFile, "Uploads/Docs");
+                    emp.Address_Proof = await UploadFileAsync(vm.AddressProofFile, "Uploads/Docs");
                 }
 
                 // UPDATE FIELDS
@@ -135,59 +151,77 @@ namespace MVC_Employee_App_WIth_Image.Controllers
                 details.Home_Address = vm.Home_Address;
                 details.Email_Address = vm.Email_Address;
 
-                _context.SaveChanges();
+                await _context.SaveChangesAsync();
 
-                return RedirectToAction("Index");
+                TempData["SuccessMessage"] = "Employee updated successfully!";
+                return RedirectToAction(nameof(Index));
             }
-            return View(vm);
+            catch (Exception ex)
+            {
+                ModelState.AddModelError("", ex.Message);
+                return View(vm);
+            }
         }
 
         // ===================== DELETE =====================
-        public IActionResult Delete(int id)
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Delete(int id)
         {
-            var emp = _context.Employees.Find(id);
-            var details = _context.EmployeeDetails.FirstOrDefault(x => x.EmpId == id);
+            var emp = await _context.Employees.FindAsync(id);
 
             if (emp == null)
                 return NotFound();
 
-            // DELETE FILES
-            DeleteFile("Uploads/Images", emp.Profile_Pic);
-            DeleteFile("Uploads/Docs", emp.Address_Proof);
+            try
+            {
+                DeleteFile("Uploads/Images", emp.Profile_Pic);
+                DeleteFile("Uploads/Docs", emp.Address_Proof);
 
-            if (details != null)
-                _context.EmployeeDetails.Remove(details);
+                _context.Employees.Remove(emp);
 
-            _context.Employees.Remove(emp);
+                await _context.SaveChangesAsync();
 
-            _context.SaveChanges();
-
-            return RedirectToAction("Index");
+                TempData["SuccessMessage"] = "Employee deleted successfully!";
+                return RedirectToAction(nameof(Index));
+            }
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = ex.Message;
+                return RedirectToAction(nameof(Index));
+            }
         }
 
         // ===================== FILE UPLOAD =====================
-        private string UploadFile(IFormFile file, string folder)
+        private async Task<string?> UploadFileAsync(IFormFile? file, string folder)
         {
             if (file == null) return null;
+
+            var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".pdf", ".doc", ".docx" };
+            var ext = Path.GetExtension(file.FileName).ToLower();
+
+            if (!allowedExtensions.Contains(ext))
+                throw new Exception("Invalid file type");
+
+            if (file.Length > 5 * 1024 * 1024)
+                throw new Exception("File size exceeds 5MB");
 
             string uploadPath = Path.Combine(_env.WebRootPath, folder);
 
             if (!Directory.Exists(uploadPath))
                 Directory.CreateDirectory(uploadPath);
 
-            string fileName = Guid.NewGuid().ToString() + "_" + file.FileName;
+            string fileName = Guid.NewGuid() + ext;
             string filePath = Path.Combine(uploadPath, fileName);
 
-            using (var stream = new FileStream(filePath, FileMode.Create))
-            {
-                file.CopyTo(stream);
-            }
+            using var stream = new FileStream(filePath, FileMode.Create);
+            await file.CopyToAsync(stream);
 
             return fileName;
         }
 
         // ===================== FILE DELETE =====================
-        private void DeleteFile(string folder, string fileName)
+        private void DeleteFile(string folder, string? fileName)
         {
             if (string.IsNullOrEmpty(fileName)) return;
 

@@ -1,26 +1,53 @@
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using MVC_Employee_App_WIth_Image.Data;
+using MVC_Employee_App_WIth_Image.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+// ===================== SERVICES =====================
+
+// MVC
 builder.Services.AddControllersWithViews();
 
-IConfiguration configuration = new ConfigurationBuilder()
-    .AddJsonFile("appsettings.json")
-    .Build();
-//Dependency Injection for DBContext with SQL Server
-builder.Services.AddDbContext<AppDbContext>
-    (options => options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")));
+// DB Context
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseSqlServer(
+        builder.Configuration.GetConnectionString("DefaultConnection")
+    ));
 
+// ===================== IDENTITY =====================
+builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
+{
+    // Relax password rules (for testing)
+    options.Password.RequireDigit = false;
+    options.Password.RequireUppercase = false;
+    options.Password.RequireLowercase = false;
+    options.Password.RequireNonAlphanumeric = false;
+    options.Password.RequiredLength = 3;
 
+    // Optional: disable email requirement
+    options.User.RequireUniqueEmail = false;
+})
+.AddEntityFrameworkStores<AppDbContext>()
+.AddDefaultTokenProviders();
+
+// ===================== COOKIE SETTINGS =====================
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.LoginPath = "/Account/Login";
+    options.AccessDeniedPath = "/Account/AccessDenied";
+    options.ExpireTimeSpan = TimeSpan.FromMinutes(30);
+    options.SlidingExpiration = true;
+});
+
+// ===================== APP BUILD =====================
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// ===================== PIPELINE =====================
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
 
@@ -29,10 +56,13 @@ app.UseStaticFiles();
 
 app.UseRouting();
 
+// MUST be in this order
+app.UseAuthentication();
 app.UseAuthorization();
 
+// ===================== ROUTING =====================
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Employee}/{action=Index}/{id?}");
+    pattern: "{controller=Account}/{action=Login}/{id?}");
 
 app.Run();

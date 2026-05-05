@@ -1,14 +1,11 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using MVC_Employee_App_WIth_Image.Models;
 
 namespace MVC_Employee_App_WIth_Image.Data
 {
-    public class AppDbContext:DbContext
+    public class AppDbContext : IdentityDbContext<ApplicationUser>
     {
-        public AppDbContext()
-        {
-        }
-
         public AppDbContext(DbContextOptions<AppDbContext> options)
             : base(options)
         {
@@ -21,10 +18,10 @@ namespace MVC_Employee_App_WIth_Image.Data
         {
             base.OnModelCreating(modelBuilder);
 
-            // One-to-One Relationship
-            modelBuilder.Entity<Employee>()
-                .HasOne(e => e.EmployeeDetails)
-                .WithOne(d => d.Employee)
+            // ✅ Recommended: configure from dependent entity
+            modelBuilder.Entity<EmployeeDetails>()
+                .HasOne(d => d.Employee)
+                .WithOne(e => e.EmployeeDetails)
                 .HasForeignKey<EmployeeDetails>(d => d.EmpId)
                 .OnDelete(DeleteBehavior.Cascade);
         }

@@ -1,44 +1,256 @@
-﻿<!DOCTYPE html>
+﻿@using Microsoft.AspNetCore.Identity
+@inject SignInManager<MVC_Employee_App_WIth_Image.Models.ApplicationUser> SignInManager
+@inject UserManager<MVC_Employee_App_WIth_Image.Models.ApplicationUser> UserManager
+
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - MVC_Employee_App_WIth_Image</title>
+    <title>@ViewData["Title"] - Employee System</title>
+
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" />
+</head>
+
+<body>
+
+    <!-- NAVBAR -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+
+            <a class="navbar-brand" asp-controller="Employee" asp-action="Index">
+                Employee System
+            </a>
+
+            <div class="collapse navbar-collapse">
+
+                <ul class="navbar-nav me-auto">
+
+                    @if (SignInManager.IsSignedIn(User))
+                    {
+                        <li class="nav-item">
+                            <a class="nav-link" asp-controller="Employee" asp-action="Index">
+                                Employees
+                            </a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a class="nav-link" asp-controller="Employee" asp-action="Create">
+                                Add Employee
+                            </a>
+                        </li>
+                    }
+
+                </ul>
+
+                <ul class="navbar-nav ms-auto">
+
+                    @if (SignInManager.IsSignedIn(User))
+                    {
+                        <li class="nav-item">
+                            <span class="nav-link text-white">
+                                Hello, @User.Identity.Name
+                            </span>
+                        </li>
+
+                        <li class="nav-item">
+                            <form asp-controller="Account" asp-action="Logout" method="post">
+                                <button type="submit" class="btn btn-danger btn-sm">
+                                    Logout
+                                </button>
+                            </form>
+                        </li>
+                    }
+                    else
+                    {
+                        <li class="nav-item">
+                            <a class="nav-link" asp-controller="Account" asp-action="Login">
+                                Login
+                            </a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a class="nav-link" asp-controller="Account" asp-action="Register">
+                                Register
+                            </a>
+                        </li>
+                    }
+
+                </ul>
+
+            </div>
+        </div>
+    </nav>
+
+    <!-- BODY -->
+    <div class="container mt-3">
+        @RenderBody()
+    </div>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+
+    @RenderSection("Scripts", required: false)
+
+</body>
+</html>
+
+@* <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Employee Management System</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/MVC_Employee_App_WIth_Image.styles.css" asp-append-version="true" />
+    <style>
+        body {
+            background-color: #f4f6f9;
+        }
+
+        .navbar-custom {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .navbar-custom .navbar-brand {
+            color: white !important;
+            font-weight: 700;
+            font-size: 20px;
+        }
+
+        .navbar-custom .nav-link {
+            color: white !important;
+            margin-left: 15px;
+            transition: opacity 0.3s;
+        }
+
+        .navbar-custom .nav-link:hover {
+            opacity: 0.8;
+        }
+
+        .navbar-custom .btn-logout {
+            background: rgba(255, 255, 255, 0.2);
+            color: white !important;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            margin-left: 10px;
+            border-radius: 5px;
+            padding: 5px 15px;
+            transition: all 0.3s;
+        }
+
+        .navbar-custom .btn-logout:hover {
+            background: rgba(255, 255, 255, 0.3);
+            text-decoration: none;
+        }
+
+        .username-display {
+            color: white;
+            margin-right: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .alert-custom {
+            border-radius: 8px;
+            border: none;
+            margin-bottom: 20px;
+        }
+
+        footer {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            margin-top: 40px;
+        }
+
+        footer a {
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        footer a:hover {
+            color: white;
+        }
+    </style>
 </head>
 <body>
     <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
+        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-custom">
             <div class="container-fluid">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">MVC_Employee_App_WIth_Image</a>
+                <a class="navbar-brand" asp-area="" asp-controller="Employee" asp-action="Index">
+                    <i class="fas fa-users-cog"></i> Employee Manager
+                </a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
                         aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
                 </button>
                 <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
                     <ul class="navbar-nav flex-grow-1">
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
-                        </li>
+                        @if (Context.Session.GetInt32("UserId") != null)
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link" asp-area="" asp-controller="Employee" asp-action="Index">
+                                    <i class="fas fa-list"></i> Employees
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" asp-area="" asp-controller="Employee" asp-action="Create">
+                                    <i class="fas fa-plus"></i> Add Employee
+                                </a>
+                            </li>
+                        }
                     </ul>
+
+                    <div class="d-flex align-items-center">
+                        @if (Context.Session.GetInt32("UserId") != null)
+                        {
+                            <div class="username-display">
+                                <i class="fas fa-user-circle"></i>
+                                <span>@Context.Session.GetString("Username")</span>
+                            </div>
+                            <a asp-area="" asp-controller="Auth" asp-action="Logout" class="btn btn-logout">
+                                <i class="fas fa-sign-out-alt"></i> Logout
+                            </a>
+                        }
+                        else
+                        {
+                            <a asp-area="" asp-controller="Auth" asp-action="Login" class="btn btn-logout">
+                                <i class="fas fa-sign-in-alt"></i> Login
+                            </a>
+                        }
+                    </div>
                 </div>
             </div>
         </nav>
     </header>
-    <div class="container">
+    <div class="container" style="margin-top: 20px;">
+        <!-- Success Message -->
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div class="alert alert-success alert-custom">
+                <i class="fas fa-check-circle"></i> @TempData["SuccessMessage"]
+            </div>
+        }
+
+        <!-- Error Message -->
+        @if (TempData["ErrorMessage"] != null)
+        {
+            <div class="alert alert-danger alert-custom">
+                <i class="fas fa-exclamation-circle"></i> @TempData["ErrorMessage"]
+            </div>
+        }
+
         <main role="main" class="pb-3">
             @RenderBody()
         </main>
     </div>
 
-    <footer class="border-top footer text-muted">
+    <footer class="border-top footer text-muted" style="margin-top: 60px;">
         <div class="container">
-            &copy; 2026 - MVC_Employee_App_WIth_Image - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+            &copy; 2026 - Employee Management System
         </div>
     </footer>
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
@@ -46,4 +258,4 @@
     <script src="~/js/site.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
-</html>
+</html> *@
